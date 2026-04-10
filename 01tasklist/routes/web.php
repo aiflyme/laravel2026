@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Http\Response;
+use Illuminate\http\Request;
 use Illuminate\Support\Facades\Route;
 
 class Task
@@ -55,8 +56,11 @@ $tasks = [
     ),
 ];
 
-Route::get('/', function () {
+Route::get('/', function () use ($tasks){
     return redirect()->route('tasks.index');
+    // return view('index', [
+    //     'tasks' => $tasks,
+    // ]);
 });
 
 Route::get('/tasks', function () use ($tasks) {
@@ -77,6 +81,24 @@ Route::get('/tasks/{id}', function ($id) use ($tasks) {
 
     // return 'one single task';
 })->name('tasks.show');
+
+Route::get('/amino', function () {
+    return view('welcome');
+})->name('amino');
+
+Route::get('/robin', function () {
+    return redirect()->route('amino');
+    //return 'robin';
+});
+
+Route::get('/robin/{id}', function ($id) {
+    return 'robin '. $id;
+});
+
+//GET
+//POST
+//PUT
+//DELETE
 
 Route::fallback(function () {
     return 'Still got somewhere';

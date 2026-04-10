@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "notion": {
+      "command": "cmd",
+      "args": ["/c", "npx", "-y", "@notionhq/notion-mcp-server"],
+      "env": {
+        "OPENAPI_MCP_HEADERS": "{\"Authorization\": \"Bearer ntn_W86080349572dHPMfLsUIcrawzNAjFUGfQQfq2ccv7deNJ\", \"Notion-Version\": \"2022-06-28\"}"
+      }
+    }
+  }
+}
