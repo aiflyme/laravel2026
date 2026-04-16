@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "mcp__notion__API-get-block-children"
+      "mcp__notion__API-get-block-children",
+      "mcp__notion__API-patch-block-children",
+      "Bash(grep -o '\"id\":\"[^\"]*\",\"parent\".*?\"type\":\"paragraph\",\"paragraph\":{\"rich_text\":\\\\[{\"type\":\"text\",\"text\":{\"content\":\"0[367]' \"C:\\\\Users\\\\rchen\\\\.claude\\\\projects\\\\C--soft-laragon-www-laravel2026\\\\9501e388-3a76-46f1-8ac2-341a80fa6eb4\\\\tool-results\\\\mcp-notion-API-get-block-children-1776161427505.txt\")",
+      "Bash(python3 -c ':*)"
     ]
   }
 }

@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Laravel Web 安全与存储 — 知识要点</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=JetBrains+Mono:wght@400;600&family=Inter:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg:        #0d1117;
+    --bg2:       #161b22;
+    --bg3:       #1c2330;
+    --border:    #30363d;
+    --text:      #e6edf3;
+    --muted:     #8b949e;
+    --accent:    #58a6ff;
+    --green:     #3fb950;
+    --orange:    #d29922;
+    --red:       #f85149;
+    --purple:    #bc8cff;
+    --teal:      #39d0b0;
+    --yellow:    #e3b341;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+    padding: 0 0 80px;
+  }
+
+  /* ── Header ── */
+  header {
+    background: linear-gradient(135deg, #0d1117 0%, #1a1f2e 50%, #0d1117 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 60px 40px 48px;
+    position: relative;
+    overflow: hidden;
+  }
+  header::before {
+    content: '';
+    position: absolute;
+    top: -80px; right: -80px;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(88,166,255,0.07) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  header::after {
+    content: '';
+    position: absolute;
+    bottom: -60px; left: -60px;
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(63,185,80,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .header-tag {
+    display: inline-block;
+    background: rgba(88,166,255,0.12);
+    border: 1px solid rgba(88,166,255,0.3);
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+  }
+  header h1 {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 2.4rem;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--text);
+    margin-bottom: 12px;
+  }
+  header h1 span { color: var(--accent); }
+  header p {
+    color: var(--muted);
+    font-size: 14px;
+    max-width: 520px;
+  }
+
+  /* ── Layout ── */
+  .container { max-width: 900px; margin: 0 auto; padding: 0 40px; }
+
+  /* ── Section ── */
+  .section {
+    margin-top: 52px;
+  }
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-num {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 600;
+    flex-shrink: 0;
+  }
+  .num-blue   { background: rgba(88,166,255,0.15);  color: var(--accent); }
+  .num-green  { background: rgba(63,185,80,0.15);   color: var(--green); }
+  .num-purple { background: rgba(188,140,255,0.15); color: var(--purple); }
+  .num-teal   { background: rgba(57,208,176,0.15);  color: var(--teal); }
+  .num-orange { background: rgba(210,153,34,0.15);  color: var(--orange); }
+  .num-red    { background: rgba(248,81,73,0.15);   color: var(--red); }
+
+  .section-header h2 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin-bottom: 14px;
+  }
+  .card-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+  }
+
+  /* ── Key point blocks ── */
+  .keypoint {
+    display: flex;
+    gap: 12px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .keypoint:last-child { border-bottom: none; padding-bottom: 0; }
+  .keypoint:first-child { padding-top: 0; }
+  .kp-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    margin-top: 8px;
+    flex-shrink: 0;
+  }
+  .dot-blue   { background: var(--accent); }
+  .dot-green  { background: var(--green); }
+  .dot-orange { background: var(--orange); }
+  .dot-red    { background: var(--red); }
+  .dot-purple { background: var(--purple); }
+  .dot-teal   { background: var(--teal); }
+  .kp-body strong {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 3px;
+  }
+  .kp-body p {
+    font-size: 13.5px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  /* ── Code ── */
+  pre, code {
+    font-family: 'JetBrains Mono', monospace;
+  }
+  code {
+    background: rgba(88,166,255,0.1);
+    border: 1px solid rgba(88,166,255,0.2);
+    color: var(--accent);
+    font-size: 12px;
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+  pre {
+    background: #010409;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px 20px;
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.65;
+    margin: 12px 0;
+  }
+  pre .c  { color: #8b949e; }
+  pre .k  { color: #ff7b72; }
+  pre .s  { color: #a5d6ff; }
+  pre .f  { color: #d2a8ff; }
+  pre .v  { color: #79c0ff; }
+  pre .n  { color: #e6edf3; }
+
+  /* ── Table ── */
+  .table-wrap { overflow-x: auto; margin: 12px 0; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+  }
+  th {
+    background: var(--bg3);
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(48,54,61,0.6);
+    color: var(--text);
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  .tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+  .tag-green  { background: rgba(63,185,80,0.15);   color: var(--green); }
+  .tag-red    { background: rgba(248,81,73,0.15);   color: var(--red); }
+  .tag-orange { background: rgba(210,153,34,0.15);  color: var(--orange); }
+  .tag-blue   { background: rgba(88,166,255,0.15);  color: var(--accent); }
+
+  /* ── Alert ── */
+  .alert {
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin: 14px 0;
+    display: flex;
+    gap: 12px;
+    font-size: 13.5px;
+  }
+  .alert-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+  .alert-info    { background: rgba(88,166,255,0.08);  border-left: 3px solid var(--accent); }
+  .alert-warn    { background: rgba(210,153,34,0.08);  border-left: 3px solid var(--orange); }
+  .alert-success { background: rgba(63,185,80,0.08);   border-left: 3px solid var(--green); }
+  .alert-danger  { background: rgba(248,81,73,0.08);   border-left: 3px solid var(--red); }
+  .alert p { color: var(--muted); line-height: 1.6; }
+  .alert strong { color: var(--text); }
+
+  /* ── Flow diagram ── */
+  .flow {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 16px 0;
+  }
+  .flow-step {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 14px;
+    font-size: 13px;
+    color: var(--text);
+    white-space: nowrap;
+  }
+  .flow-arrow {
+    color: var(--muted);
+    font-size: 16px;
+  }
+  .flow-step.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(88,166,255,0.08);
+  }
+  .flow-step.success {
+    border-color: var(--green);
+    color: var(--green);
+    background: rgba(63,185,80,0.08);
+  }
+  .flow-step.danger {
+    border-color: var(--red);
+    color: var(--red);
+    background: rgba(248,81,73,0.08);
+  }
+
+  /* ── Grid ── */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 600px) { .grid2 { grid-template-columns: 1fr; } }
+
+  /* ── TOC ── */
+  .toc {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin: 40px 0 0;
+  }
+  .toc-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 14px;
+  }
+  .toc a {
+    display: block;
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 13.5px;
+    padding: 5px 0;
+    transition: color 0.15s;
+  }
+  .toc a:hover { color: var(--accent); }
+  .toc a span { color: var(--border); margin-right: 8px; }
+
+  hr.section-divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 48px 0 0;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="container">
+    <div class="header-tag">Laravel · Web 安全</div>
+    <h1>CSRF · Session · Cookie<br><span>核心知识要点</span></h1>
+    <p>涵盖 CSRF 防护原理、同源策略、Session/Cookie 工作机制、购物车存储方案选型</p>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- TOC -->
+  <div class="toc">
+    <div class="toc-title">目录</div>
+    <a href="#csrf"><span>01</span>CSRF 是什么 &amp; Laravel 如何防护</a>
+    <a href="#sop"><span>02</span>同源策略 — 为什么恶意网站拿不到 Token</a>
+    <a href="#token-verify"><span>03</span>Laravel Token 验证机制 &amp; 安全性</a>
+    <a href="#cookie-session"><span>04</span>Cookie 与 Session 的本质区别</a>
+    <a href="#session-hijack"><span>05</span>Session ID 会被窃取吗</a>
+    <a href="#cart"><span>06</span>购物车存储方案选型</a>
+    <a href="#session-db"><span>07</span>Session 持久化 &amp; 数据库多行问题</a>
+  </div>
+
+  <!-- ────────────────────────────────────── -->
+  <hr class="section-divider">
+  <div class="section" id="csrf">
+    <div class="section-header">
+      <div class="section-num num-blue">01</div>
+      <h2>CSRF 是什么 &amp; Laravel 如何防护</h2>
+    </div>
+
+    <div class="card">
+      <div class="card-title">攻击原理</div>
+      <div class="keypoint">
+        <div class="kp-dot dot-red"></div>
+        <div class="kp-body">
+          <strong>跨站请求伪造（CSRF）</strong>
+          <p>攻击者诱导已登录用户访问恶意页面，页面自动向目标网站发送伪造请求。浏览器会自动带上 Cookie，服务器无法区分真假请求。</p>
+        </div>
+      </div>
+      <div class="keypoint">
+        <div class="kp-dot dot-orange"></div>
+        <div class="kp-body">
+          <strong>攻击成立的前提</strong>
+          <p>用户已登录目标网站 + 目标网站没有 CSRF 防护 + 用户被诱导访问了恶意页面</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Laravel 防护方案</div>
+      <div class="keypoint">
+        <div class="kp-dot dot-green"></div>
+        <div class="kp-body">
+          <strong>在 Blade 表单中添加 @csrf</strong>
+          <p>自动生成 <code>&lt;input type="hidden" name="_token" value="..."&gt;</code></p>
+        </div>
+      </div>
+      <div class="keypoint">
+        <div class="kp-dot dot-blue"></div>
+        <div class="kp-body">
+          <strong>AJAX 请求携带 Token</strong>
+          <p>通过 <code>meta[name=csrf-token]</code> + 请求头 <code>X-CSRF-TOKEN</code>，或利用 Axios 自动读取 <code>XSRF-TOKEN</code> Cookie</p>
+        </div>
+      </div>
+      <div class="keypoint">
+        <div class="kp-dot dot-orange"></div>
+        <div class="kp-body">
+          <strong>排除特定路由（Webhook 等）</strong>
+          <p>在 <code>VerifyCsrfToken</code> 中间件的 <code>$except</code> 数组中声明</p>
+        </div>
+      </div>
+      <div class="keypoint">
+        <div class="kp-dot dot-purple"></div>
+        <div class="kp-body">
+          <strong>API 路由无需 CSRF</strong>
+          <p><code>routes/api.php</code> 使用 api 中间件组，不含 CSRF 检查，改用 Token 认证</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="alert alert-warn">
+      <div class="alert-icon">⚠</div>
+      <p><strong>验证失败返回 419</strong> — 常见原因：缺少 @csrf、Session 过期、AJAX 未携带 Token、路由文件写错位置</p>
+    </div>
+  </div>
+
+  <!-- ────────────────────────────────────── -->
+  <hr class="section-divider">
+  <div class="section" id="sop">
+    <div class="section-header">
+      <div class="section-num num-green">02</div>
+      <h2>同源策略 — 为什么恶意网站拿不到 Token</h2>
+    </div>
+
+    <div class="card">
+      <div class="card-title">同源的定义</div>
+      <p style="color:var(--muted); font-size:13.5px;">协议 + 域名 + 端口 三者完全相同才算同源。<code>evil.com</code> 与 <code>bank.com</code> 不同源，浏览器严格隔离。</p>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <div class="card-title" style="color:var(--red)">恶意网站能做到</div>
+        <div class="keypoint">
+          <div class="kp-dot dot-red"></div>
+          <div class="kp-body"><p>让用户浏览器向 bank.com 发送 POST 请求</p></div>
+        </div>
+        <div class="keypoint">
+          <div class="kp-dot dot-red"></div>
+          <div class="kp-body"><p>浏览器自动附带 bank.com 的 Cookie（含登录凭证）</p></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="color:var(--green)">恶意网站做不到</div>
+        <div class="keypoint">
+          <div class="kp-dot dot-green"></div>
+          <div class="kp-body"><p>读取 bank.com 页面的 DOM（Token 藏在隐藏字段里）</p></div>
+        </div>
+        <div class="keypoint">
+          <div class="kp-dot dot-green"></div>
+          <div class="kp-body"><p>读取 bank.com 的 Cookie（按域隔离）</p></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="alert alert-info">
+      <div class="alert-icon">💡</div>
+      <p><strong>关键不对称性：</strong>Cookie 是浏览器自动携带的（你没得选），但<strong>读取</strong>另一个域的 Cookie 或 DOM 被同源策略严格禁止。CSRF Token 正是利用了这个不对称性。</p>
+    </div>
+  </div>
+
+  <!-- ────────────────────────────────────── -->
+  <hr class="section-divider">
+  <div class="section" id="token-verify">
+    <div class="section-header">
+      <div class="section-num num-purple">03</div>
+      <h2>Laravel Token 验证机制 &amp; 安全性</h2>
+    </div>
+
+    <div class="card">
+      <div class="card-title">验证流程</div>
+      <div class="flow">
+        <div class="flow-step">用户访问页面</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step active">random_bytes(40)<br>生成 Token</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">存入 Session</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">@csrf 嵌入表单</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">用户提交</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step active">hash_equals() 比对</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step success">通过</div>
+        <div class="flow-arrow">/</div>
+        <div class="flow-step danger">419</div>
+      </div>
+      <div class="alert alert-success" style="margin-top:8px;">
+        <div class="alert-icon">✓</div>
+        <p><strong>核心模型：</strong>Token 是随机钥匙，服务端存原件，客户端提交副本，比对是否一致。没有推导算法，无从破解。</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">为什么极难破解 — 四层保障</div>
+      <div class="keypoint">
+        <div class="kp-dot dot-blue"></div>
+        <div class="kp-body">
+          <strong>密码学随机性</strong>
+          <p><code>random_bytes(40)</code> = 320 位随机数，每秒猜 10 亿次也需要宇宙年龄才能碰对</p>
+        </div>
+      </div>
+      <div class="keypoint">
+        <div class="kp-dot dot-green"></div>
+        <div class="kp-body">
+          <strong>Token 绑定 Session，每人不同</strong>
+          <p>即使猜中一个用户的 Token，对其他用户无效，Session 过期后立即失效</p>
+        </div>
+      </div>
+      <div class="keypoint">
+        <div class="kp-dot dot-orange"></div>
+        <div class="kp-body">
+          <strong>hash_equals() 防时序攻击</strong>
+          <p>强制走完整比较，无论第几个字符不同耗时完全一样，无法通过响应时间"逐字试探"</p>
+        </div>
+      </div>
+      <div class="keypoint">
+        <div class="kp-dot dot-purple"></div>
+        <div class="kp-body">
+          <strong>Token 轮换</strong>
+          <p>每次成功响应后重新生成，旧 Token 立即失效，截获旧 Token 也无用</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">CSRF 防护失效的场景</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>漏洞场景</th><th>原因</th><th>状态</th></tr></thead>
+          <tbody>
+            <tr><td>网站存在 XSS 漏洞</td><td>攻击者注入 JS 直接读取 DOM 里的 Token</td><td><span class="tag tag-red">高危</span></td></tr>
+            <tr><td>使用 HTTP 而非 HTTPS</td><td>中间人可嗅探 Token 明文</td><td><span class="tag tag-red">高危</span></td></tr>
+            <tr><td>Token 泄露在 URL</td><td>Referer 头、日志、缓存都会记录</td><td><span class="tag tag-orange">中危</span></td></tr>
+            <tr><td>$except 配置不当</td><td>开发者手动排除了不该排除的路由</td><td><span class="tag tag-orange">中危</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ────────────────────────────────────── -->
+  <hr class="section-divider">
+  <div class="section" id="cookie-session">
+    <div class="section-header">
+      <div class="section-num num-teal">04</div>
+      <h2>Cookie 与 Session 的本质区别</h2>
+    </div>
+
+    <div class="alert alert-info">
+      <div class="alert-icon">💡</div>
+      <p><strong>一句话：Cookie 是信使，Session 是保险箱。</strong>Cookie 只负责把 Session ID 带给服务器，真正的数据锁在服务器的 Session 里。</p>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>维度</th><th>Cookie</th><th>Session</th></tr></thead>
+        <tbody>
+          <tr><td>数据存在哪</td><td>浏览器本地</td><td>服务器（文件/Redis/DB）</td></tr>
+          <tr><td>容量</td><td>4 KB</td><td>无限制（服务器决定）</td></tr>
+          <tr><td>安全性</td><td>客户端可见，需加密</td><td>客户端只见 ID，数据不暴露</td></tr>
+          <tr><td>自动携带</td><td>每次请求自动带</td><td>ID 通过 Cookie 带，数据在服务端</td></tr>
+          <tr><td>关浏览器后</td><td>无 Expires 则消失</td><td>ID Cookie 消失，服务端数据可能还在</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card" style="margin-top:14px;">
+      <div class="card-title">Cookie 重要属性</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>属性</th><th>作用</th></tr></thead>
+          <tbody>
+            <tr><td><code>HttpOnly</code></td><td>JS 无法读取，防 XSS 盗取 Cookie</td></tr>
+            <tr><td><code>Secure</code></td><td>只在 HTTPS 连接下发送</td></tr>
+            <tr><td><code>SameSite=Lax</code></td><td>阻止跨站请求携带，辅助防 CSRF</td></tr>
+            <tr><td><code>Expires/Max-Age</code></td><td>持久化 Cookie；不设则关闭浏览器失效</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Session 与 Cookie 不是缺一不可</div>
+      <div class="keypoint">
+        <div class="kp-dot dot-blue"></div>
+        <div class="kp-body">
+          <strong>Cookie 传 Session ID（最常用）</strong>
+          <p>Web 应用标准方案，HttpOnly + Secure 保护，Laravel 默认方式</p>
+        </div>
+      </div>
+      <div class="keypoint">
+        <div class="kp-dot dot-orange"></div>
+        <div class="kp-body">
+          <strong>URL 参数传 ID（不推荐）</strong>
+          <p>会出现在日志、历史、Referer 头中，安全性差，现代应用不应使用</p>
+        </div>
+      </div>
+      <div class="keypoint">
+        <div class="kp-dot dot-purple"></div>
+        <div class="kp-body">
+          <strong>请求头传 JWT（API/SPA 常用）</strong>
+          <p><code>Authorization: Bearer token</code>，服务端无状态，Laravel Sanctum Token 模式</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Laravel Session 配置要点</div>
+      <pre><span class="c">// config/session.php</span>
+<span class="s">'driver'</span>          => <span class="s">'redis'</span>,      <span class="c">// 存储后端</span>
+<span class="s">'lifetime'</span>        => <span class="n">120</span>,         <span class="c">// 服务端数据保留分钟数</span>
+<span class="s">'expire_on_close'</span> => <span class="k">false</span>,       <span class="c">// true=关浏览器即过期</span>
+<span class="s">'http_only'</span>       => <span class="k">true</span>,        <span class="c">// JS 读不到（默认已开启）</span>
+<span class="s">'secure'</span>          => <span class="k">true</span>,        <span class="c">// 生产环境必须开启</span>
+<span class="s">'same_site'</span>       => <span class="s">'lax'</span>,       <span class="c">// 跨站限制</span></pre>
+      <div class="alert alert-warn" style="margin-top:0;">
+        <div class="alert-icon">⚠</div>
+        <p><strong>存储在哪</strong>（driver）和<strong>何时过期</strong>（lifetime / expire_on_close）是两个独立配置，互不影响。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ────────────────────────────────────── -->
+  <hr class="section-divider">
+  <div class="section" id="session-hijack">
+    <div class="section-header">
+      <div class="section-num num-red">05</div>
+      <h2>Session ID 会被窃取吗</h2>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>攻击方式</th><th>手段</th><th>防御</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>XSS 注入脚本</td>
+            <td><code>document.cookie</code> 读取后外传</td>
+            <td><span class="tag tag-green">HttpOnly Cookie</span></td>
+          </tr>
+          <tr>
+            <td>网络嗅探/中间人</td>
+            <td>HTTP 明文截获，公共 WiFi 高危</td>
+            <td><span class="tag tag-green">Secure Cookie + HTTPS</span></td>
+          </tr>
+          <tr>
+            <td>共享设备/物理访问</td>
+            <td>直接查看或复制 Cookie 文件</td>
+            <td><span class="tag tag-blue">Session 过期 + 登出销毁</span></td>
+          </tr>
+          <tr>
+            <td>子域名 Cookie 泄露</td>
+            <td>evil.yourapp.com 读取父域 Cookie</td>
+            <td><span class="tag tag-blue">精确 Domain + SameSite=Strict</span></td>
+          </tr>
+          <tr>
+            <td>会话固定攻击</td>
+            <td>预先植入 Session ID，等用户登录</td>
+            <td><span class="tag tag-green">登录后 regenerate()</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card" style="margin-top:14px;">
+      <div class="card-title">Laravel 登录后的 Session 处理</div>
+      <pre><span class="c">// 登录成功后换 ID（防会话固定攻击）</span>
+<span class="f">$request</span>-><span class="f">session</span>()-><span class="f">regenerate</span>();
+
+<span class="c">// 退出登录时完全销毁</span>
+<span class="f">Auth</span>::<span class="f">logout</span>();
+<span class="f">$request</span>-><span class="f">session</span>()-><span class="f">invalidate</span>();
+<span class="f">$request</span>-><span class="f">session</span>()-><span class="f">regenerateToken</span>();</pre>
+    </div>
+
+    <div class="alert alert-success">
+      <div class="alert-icon">✓</div>
+      <p>HttpOnly + Secure + HTTPS 三件套 + 合理过期策略，已覆盖绝大多数真实攻击场景。剩余风险本质是 XSS 和物理安全问题，不是 Session 机制本身的缺陷。</p>
+    </div>
+  </div>
+
+  <!-- ────────────────────────────────────── -->
+  <hr class="section-divider">
+  <div class="section" id="cart">
+    <div class="section-header">
+      <div class="section-num num-orange">06</div>
+      <h2>购物车存储方案选型</h2>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>维度</th><th>Cookie</th><th>Session</th><th>localStorage</th></tr></thead>
+        <tbody>
+          <tr><td>数据位置</td><td>浏览器</td><td>服务器</td><td>浏览器</td></tr>
+          <tr><td>容量</td><td>4 KB</td><td>无限制</td><td>5 MB+</td></tr>
+          <tr><td>自动发服务器</td><td>是</td><td>ID 随 Cookie</td><td>否，需手动 Ajax</td></tr>
+          <tr><td>关闭浏览器后</td><td>无 Expires 则消失</td><td>ID 消失，数据可配置</td><td><strong style="color:var(--green)">永久保留</strong></td></tr>
+          <tr><td>换设备可见</td><td>否</td><td>否（未登录）</td><td>否</td></tr>
+          <tr><td>访客购物车</td><td>可，但容量小</td><td><span class="tag tag-green">最常用</span></td><td><span class="tag tag-blue">纯前端方案</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card" style="margin-top:14px;">
+      <div class="card-title">localStorage 方案特点</div>
+      <div class="keypoint">
+        <div class="kp-dot dot-green"></div>
+        <div class="kp-body">
+          <strong>关闭浏览器数据不丢失</strong>
+          <p>数据写在本地磁盘，重新打开浏览器购物车依然存在，体验优于 Session 方案</p>
+        </div>
+      </div>
+      <div class="keypoint">
+        <div class="kp-dot dot-red"></div>
+        <div class="kp-body">
+          <strong>结账时必须重新验证</strong>
+          <p>服务端绝不能相信前端传来的价格，必须重新查数据库验证价格和库存</p>
+        </div>
+      </div>
+      <div class="keypoint">
+        <div class="kp-dot dot-orange"></div>
+        <div class="kp-body">
+          <strong>跨设备需要登录同步</strong>
+          <p>换浏览器或换设备后购物车消失，登录后需将 localStorage 数据同步到服务端数据库</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">主流电商完整方案</div>
+      <div class="flow">
+        <div class="flow-step">访客阶段<br><small style="color:var(--muted)">Session 或 localStorage</small></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step active">登录<br><small style="color:var(--muted)">合并购物车到数据库</small></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">数据库购物车<br><small style="color:var(--muted)">user_id 关联，跨设备</small></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step success">结账<br><small style="color:var(--muted)">服务端重新验价</small></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ────────────────────────────────────── -->
+  <hr class="section-divider">
+  <div class="section" id="session-db">
+    <div class="section-header">
+      <div class="section-num num-blue">07</div>
+      <h2>Session 持久化 &amp; 数据库多行问题</h2>
+    </div>
+
+    <div class="card">
+      <div class="card-title">为什么要用 Redis/数据库存 Session</div>
+      <div class="keypoint">
+        <div class="kp-dot dot-red"></div>
+        <div class="kp-body">
+          <strong>多台服务器的问题</strong>
+          <p>文件/内存存储时，用户第1次打到服务器A，第2次打到服务器B，B上没有Session → 被踢出登录</p>
+        </div>
+      </div>
+      <div class="keypoint">
+        <div class="kp-dot dot-green"></div>
+        <div class="kp-body">
+          <strong>Redis 共享存储解决问题</strong>
+          <p>所有服务器读写同一个 Redis，Session 数据共享，用户无感知</p>
+        </div>
+      </div>
+      <div class="keypoint">
+        <div class="kp-dot dot-blue"></div>
+        <div class="kp-body">
+          <strong>Redis TTL 自动清理</strong>
+          <p>按 <code>lifetime</code> 自动过期删除，无需额外任务。数据库方案需定期运行 <code>php artisan session:gc</code></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">数据库出现 2 行的原因</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>原因</th><th>说明</th><th>判断方法</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><span class="tag tag-red">最常见</span> 登录触发 regenerate()</td>
+              <td>访客 Session 行残留 + 登录后新行创建</td>
+              <td>旧行 user_id = NULL</td>
+            </tr>
+            <tr>
+              <td>多浏览器同时登录</td>
+              <td>Chrome 一行，Firefox 一行，都有效</td>
+              <td>两行 user_id 都有值</td>
+            </tr>
+            <tr>
+              <td>过期数据未 GC</td>
+              <td>GC 概率触发（默认 2/100），旧行未及时清理</td>
+              <td>旧行 last_activity 很久之前</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <pre><span class="c">-- 快速排查</span>
+<span class="k">SELECT</span> id, user_id, <span class="f">FROM_UNIXTIME</span>(last_activity) <span class="k">as</span> time
+<span class="k">FROM</span> sessions
+<span class="k">ORDER BY</span> last_activity <span class="k">DESC</span>;</pre>
+      <div class="alert alert-info" style="margin-top:8px">
+        <div class="alert-icon">💡</div>
+        <p><code>user_id = NULL</code> 的行是访客遗留，等 GC 自动清理。手动清理运行 <code>php artisan session:gc</code></p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">存储位置 vs 过期时间 — 两个独立维度</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>expire_on_close</th><th>lifetime</th><th>效果</th></tr></thead>
+          <tbody>
+            <tr><td>true</td><td>120 分钟</td><td>关浏览器立刻登出，最多撑 120 分钟</td></tr>
+            <tr><td>false</td><td>120 分钟</td><td>不活跃 120 分钟后登出，关浏览器没影响</td></tr>
+            <tr><td>false</td><td>43200 分钟</td><td>"记住我"效果，30 天内免登录</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:60px; padding:24px; background:var(--bg2); border:1px solid var(--border); border-radius:10px; text-align:center;">
+    <p style="color:var(--muted); font-size:13px;">Laravel Web 安全知识要点 · 整理自学习记录</p>
+  </div>
+
+</div>
+</body>
+</html>
