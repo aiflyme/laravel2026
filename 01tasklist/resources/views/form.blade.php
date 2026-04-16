@@ -14,14 +14,14 @@
     </div>
     <div class="mb-4">
         <label for="description">Description</label>
-        <textarea id="description" name="description" rows="4" @class(['border-red-500'=>$errors->has('description')])>{{ $task->description ?? old('description') }}</textarea>
+        <textarea id="description" name="description" rows="4" @class(['border-red-500'=>$errors->has('description')])>{{ old('description', $task->description ?? '') }}</textarea>
         @error('description')
             <p class="error">{{ $message }}</p>
         @enderror
     </div>
     <div class="mb-4">
         <label for="long_description">Long Description</label>
-        <textarea  id="long_description" name="long_description" rows="8" @class(['border-red-500'=>$errors->has('long_description')])>{{ $task->long_description ?? old('long_description') }}</textarea>
+        <textarea  id="long_description" name="long_description" rows="8" @class(['border-red-500'=>$errors->has('long_description')])>{{ old('long_description', $task->long_description ?? '') }}</textarea>
             @error('long_description')
             <p class="error">{{ $message }}</p>
         @enderror
